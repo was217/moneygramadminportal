@@ -130,7 +130,22 @@ tbody td{padding:10px 13px;font-size:13px;color:var(--mg-gray-700);vertical-alig
 .db-compact thead th{padding:7px 6px;font-size:9px;letter-spacing:.02em;}
 .db-compact tbody td{padding:7px 6px;font-size:11px;}
 .db-compact .aic{width:24px;height:24px;font-size:12px;border-radius:5px;}
-.db-compact .abts{gap:3px!important;}
+.db-card-list{display:none;}
+.dbc{background:var(--mg-white);border:1px solid var(--mg-gray-200);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;}
+.dbc-top{display:flex;align-items:center;gap:10px;}
+.dbc-av{width:36px;height:36px;border-radius:50%;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dbc-id{flex:1;min-width:0;}
+.dbc-name{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dbc-sub{font-size:11px;color:var(--mg-gray-400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+.dbc-amt{font-size:17px;font-weight:800;white-space:nowrap;}
+.dbc-mid{display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid var(--mg-gray-100);gap:8px;}
+.dbc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--mg-gray-500);}
+.dbc-kv b{color:var(--mg-gray-800);font-weight:700;}
+.dbc-pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap;}
+.dbc-actions{display:flex;gap:5px;flex-shrink:0;}
+.dbc-actions .aic{width:34px;height:34px;font-size:15px;}
+.dbc-doc{font-size:11px;color:var(--mg-gray-500);display:inline-flex;align-items:center;gap:3px;}
+.dbc-doc .badge{font-size:10px;padding:1px 6px;}
 .db-mv-row:hover{background:var(--mg-gray-50);}
 .stat-click{cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
 .stat-click:hover{transform:translateY(-2px);box-shadow:0 6px 16px -6px rgba(0,0,0,.18);}
@@ -447,6 +462,25 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
   .tbl-head { padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
   thead th, tbody td { padding: 8px 10px; font-size: 12px; }
 
+  /* DUE BALANCE: on phones, hide the 14-column table and show the stacked card
+     view instead — far more readable than a wide scrolling table. */
+  #tab-duebalance .table-wrap-db,
+  .db-compact { display: none !important; }
+  #dbViewMain .db-card-list { display: block !important; }
+
+  /* AGENTS: full card view on phones (most-used mobile tab) */
+  #tab-agents #agentsBody { display: none; }
+  #tab-agents table { display: none; }
+  #tab-agents #agentsCardList { display: block !important; }
+
+  /* All OTHER tables: horizontal scroll so columns keep their width instead of
+     overlapping. (Due Balance & Agents handled by their card views above.) */
+  #tab-documents .table-wrap, #tab-tellers .table-wrap, #tab-onboarding .table-wrap,
+  #tab-commissions .table-wrap, #tab-lms .table-wrap,
+  #tab-documents .table-wrap > table, #tab-tellers .table-wrap > table,
+  #tab-onboarding .table-wrap > table, #tab-commissions .table-wrap > table,
+  #tab-lms .table-wrap > table { min-width: 760px; }
+
   /* MODALS: nearly full-screen with comfortable margins */
   .modal-overlay { padding: 6px; align-items: flex-start; }
   .modal { max-height: 96vh; border-radius: 12px; }
@@ -663,6 +697,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
           </tr></thead>
           <tbody id="agentsBody"></tbody>
         </table>
+        <div id="agentsCardList" class="db-card-list"></div>
       </div>
     </div>
 
@@ -1261,6 +1296,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
               <tbody id="dbTableBody"></tbody>
             </table>
           </div>
+          <div id="dbCardList" class="db-card-list"></div>
         </div>
       </div>
       <!-- History view -->
@@ -8386,6 +8422,42 @@ function renderAgents(list){
     +'</tr>';
   }).join('');
   document.getElementById('agentCount').textContent = rows.length + ' found';
+
+  // ── Mobile card view (phones only; desktop keeps the table) ──
+  var acl=document.getElementById('agentsCardList');
+  if(acl){
+    acl.innerHTML=rows.map(function(a){
+      var idx=agents.indexOf(a);
+      var av=(a.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+      var col=(typeof _dbAvatarColor==='function')?_dbAvatarColor(a.name||''):'#d0021b';
+      var statusPill=a.status==='Active'
+        ?'<span class="dbc-pill" style="background:#f0fdf4;color:#16a34a;">Active</span>'
+        :'<span class="dbc-pill" style="background:#f3f4f6;color:#6b7280;">'+(a.status||'Inactive')+'</span>';
+      return '<div class="dbc" onclick="openDetail('+idx+')">'
+        +'<div class="dbc-top">'
+          +'<div class="dbc-av" style="background:'+col+';">'+av+'</div>'
+          +'<div class="dbc-id">'
+            +'<div class="dbc-name">'+a.name+'</div>'
+            +'<div class="dbc-sub">'+(a.owner||'')+(a.city?' \u00b7 '+a.city:'')+' \u00b7 '+(a.agentId||'')+'</div>'
+          +'</div>'
+          +statusPill
+        +'</div>'
+        +'<div class="dbc-mid">'
+          +'<div class="dbc-meta">'
+            +'<span class="dbc-doc">Cert '+_agentBadge(a,'certExpiry')+'</span>'
+            +'<span class="dbc-doc">Pass '+_agentBadge(a,'passport')+'</span>'
+            +'<span class="dbc-doc">Res '+_agentBadge(a,'resCard')+'</span>'
+          +'</div>'
+          +'<div class="dbc-actions" onclick="event.stopPropagation()">'
+            +'<button class="aic rh" onclick="openDetail('+idx+')" title="View">&#128065;</button>'
+            +'<button class="aic" onclick="openEmailModal(\''+(a.email||'')+'\')" title="Email">&#9993;&#65039;</button>'
+            +'<button class="aic gh" onclick="openWA(\''+(a.tel||'')+'\')" title="WhatsApp">&#128172;</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+
   _updateSortIndicators();
   if(typeof _updateBulkBar==='function') _updateBulkBar();
   if(typeof _syncAgentFilterUI==='function') _syncAgentFilterUI();
@@ -10115,10 +10187,14 @@ function _renderSettingsStorageBar(){
   var bytes=0; try{ for(var k in localStorage){ if(localStorage.hasOwnProperty(k)) bytes+=(localStorage[k].length+k.length)*2; } }catch(e){}
   var mb=bytes/1048576, cap=5, pct=Math.min(100,Math.round(mb/cap*100));
   var col=pct>=90?'#dc2626':pct>=70?'#d97706':'#16a34a';
-  el.innerHTML='<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--mg-gray-600);font-weight:600;">Used</span>'
+  var cloudOn = (typeof CLOUD!=='undefined') && CLOUD.ready && CLOUD.enabled;
+  el.innerHTML='<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--mg-gray-600);font-weight:600;">Local working copy</span>'
     +'<span style="color:'+col+';font-weight:800;">'+mb.toFixed(2)+' MB of ~5 MB ('+pct+'%)</span></div>'
     +'<div style="height:10px;background:var(--mg-gray-200);border-radius:6px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+col+';transition:width .3s;"></div></div>'
-    +(pct>=70?'<div style="font-size:11px;color:'+col+';margin-top:6px;">\u26A0\uFE0F Storage is filling up. Download a backup, then clear older data \u2014 or move to cloud storage.</div>':'');
+    +'<div style="font-size:11px;color:var(--mg-gray-400);margin-top:6px;">This is the browser\u2019s local copy (~5 MB limit). '
+      +(cloudOn?'\u2705 Cloud backup is active \u2014 your data is safe even if this fills up.':'\u26A0\uFE0F Cloud sync is off \u2014 this is your only copy.')+'</div>'
+    +(pct>=70?'<div style="font-size:11px;color:'+col+';margin-top:4px;font-weight:600;">\u26A0\uFE0F Local storage is filling up. '
+      +(cloudOn?'Cloud has everything, but new local writes may start failing \u2014 consider clearing older months from this browser (Clear History in Due Balance).':'Download a backup and clear older data now.')+'</div>':'');
 }
 
 
@@ -11723,8 +11799,13 @@ function _renderDbStats(){
   var repeat  =entries.filter(_isRepeatOffender);
   // NET TOTAL = sum of ALL closing balances (positive + negative), matches Excel TOTAL row.
   // Sum RAW (unrounded) closings then round ONCE to avoid per-row rounding drift (the 1-cent bug).
-  var netTotal=_round2(entries.filter(function(e){return e.settledDate!==today;}).reduce(function(s,e){return s+(e.amountRaw!=null?e.amountRaw:(e.amount||0));},0));
-  var totalNeg=_round2(negative.reduce(function(s,e){return s+(e.amountRaw!=null?e.amountRaw:(e.amount||0));},0));  el.innerHTML=
+  /* Sum in integer cents to eliminate floating-point drift (the 1-cent errors).
+     Round each value to the nearest cent first, sum as integers, then convert back. */
+  function _sumCents(arr){
+    var c=0; arr.forEach(function(e){ var v=(e.amountRaw!=null?e.amountRaw:(e.amount||0)); c+=Math.round(v*100); }); return c/100;
+  }
+  var netTotal=_sumCents(entries.filter(function(e){return e.settledDate!==today;}));
+  var totalNeg=_sumCents(negative);  el.innerHTML=
     _dbStat('Total Agents',total,pending.length+' pending \u00b7 '+negative.length+' credit','up','all')
    +_dbStat('NET BALANCE DUE',_fmtEur(netTotal),pending.length+' owe \u00b7 '+negative.length+' credit',netTotal>0?'down':'up','pending')
    +_dbStat('Settled Today',settled.length,settled.length+' cleared \u2713','up','settled')
@@ -11877,7 +11958,7 @@ function renderDashboard(){
   var today = (typeof _todayKey==='function')?_todayKey():'';
   var pending = entries.filter(function(e){return e.settledDate!==today && (e.amount||0)>0;});
   var settled = entries.filter(function(e){return e.settledDate===today;});
-  var totalDue = Math.round(pending.reduce(function(s,e){return s+(e.amountRaw!=null?e.amountRaw:(e.amount||0));},0)*100)/100;
+  var totalDue = (function(){var c=0;pending.forEach(function(e){c+=Math.round((e.amountRaw!=null?e.amountRaw:(e.amount||0))*100);});return c/100;})();
   var repeat = entries.filter(function(e){return (typeof _isRepeatOffender==='function') && _isRepeatOffender(e);});
   var expiring = _dashDocsExpiringSoon(7);
 
@@ -12496,6 +12577,11 @@ function _updateDbSortArrows(){
     th.style.color=(_dbHSort.key===k)?'var(--mg-red)':'';
   });
 }
+function _dbAvatarColor(seed){
+  var cols=['#d0021b','#7c3aed','#2563eb','#16a085','#e67e22','#27ae60','#9333ea','#0891b2'];
+  var h=0; seed=String(seed||''); for(var ci=0;ci<seed.length;ci++) h=(h*31+seed.charCodeAt(ci))&0xffff;
+  return cols[h%cols.length];
+}
 function renderDueBalance(){
   _renderDbStats();_renderDbDateBanner();
   var entries=_dbLoad(),today=_todayKey();
@@ -12549,7 +12635,7 @@ function renderDueBalance(){
   var vtEl=document.getElementById('dbViewTotal');
   if(vtEl){
     // Net total = sum of ALL amounts in current view (including negatives), matching Excel TOTAL row
-    var vt=Math.round(list.reduce(function(s,e){return s+(e.amountRaw!=null?e.amountRaw:(e.amount||0));},0)*100)/100;
+    var vt=(function(){var c=0;list.forEach(function(e){c+=Math.round((e.amountRaw!=null?e.amountRaw:(e.amount||0))*100);});return c/100;})();
     vtEl.textContent=list.length?_fmtEur(vt):'';
     vtEl.style.color=vt<0?'#2563eb':'#d0021b';
   }
@@ -12623,6 +12709,49 @@ function renderDueBalance(){
       +'<button class="aic" title="Growth Analysis" onclick="dbShowGrowthChart(\''+e.agentId+'\',\''+encodeURIComponent(e.name)+'\')" style="background:#fef3c7;color:#d97706;border-color:#fde68a;">&#128200;</button>'
       +'</div></td></tr>';
   }).join('');
+
+  // ── Mobile card view (shown only on phones via CSS; desktop keeps the table) ──
+  var cardWrap=document.getElementById('dbCardList');
+  if(cardWrap){
+    cardWrap.innerHTML=list.map(function(e){
+      var settled=e.settledDate===today;
+      var a=parseFloat(e.amount||0);
+      var ps=(typeof _dbPaymentStatus==='function')?_dbPaymentStatus(e):{status:'',daysSincePayment:0,reason:''};
+      var av=(e.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+      var col=_dbAvatarColor(e.name||'');
+      var amtColor=a<-0.005?'#2563eb':a>0.005?'#d0021b':'#6b7280';
+      var amtLabel=a<-0.005?_fmtEur(a)+' cr':_fmtEur(a);
+      // status pill
+      var pill='';
+      if(settled){ pill='<span class="dbc-pill" style="background:#f0fdf4;color:#16a34a;">Settled</span>'; }
+      else if(ps.status==='nonpayer'||ps.status==='rising'||ps.status==='small'){ pill='<span class="dbc-pill" style="background:#fef2f2;color:#dc2626;" title="'+(ps.reason||'')+'">'+(ps.status==='rising'?'Rising':ps.status==='small'?'Low pay':'No pay '+ps.daysSincePayment+'d')+'</span>'; }
+      else if(ps.status==='partial'){ pill='<span class="dbc-pill" style="background:#fffbeb;color:#d97706;">Partial</span>'; }
+      else if(ps.status==='paying'){ pill='<span class="dbc-pill" style="background:#f0fdf4;color:#16a34a;">Paying</span>'; }
+      else if(a<-0.005){ pill='<span class="dbc-pill" style="background:#eff6ff;color:#2563eb;">Credit</span>'; }
+      return '<div class="dbc" onclick="openDbLedger(\''+e.agentId+'\')">'
+        +'<div class="dbc-top">'
+          +'<div class="dbc-av" style="background:'+col+';">'+av+'</div>'
+          +'<div class="dbc-id">'
+            +'<div class="dbc-name">'+(e.name||'')+'</div>'
+            +'<div class="dbc-sub">'+(e.city||'')+' \u00b7 '+(e.agentId||'')+' \u00b7 '+(e.reportDate?_fmtDateShort(e.reportDate):'')+'</div>'
+          +'</div>'
+          +'<div class="dbc-amt" style="color:'+amtColor+';">'+amtLabel+'</div>'
+        +'</div>'
+        +'<div class="dbc-mid">'
+          +'<div class="dbc-meta">'+pill
+            +'<span class="dbc-kv">Sends <b>'+(e.totalSends>0?_fmtEur(e.totalSends):'\u2014')+'</b></span>'
+            +(e.deposit>0?'<span class="dbc-kv" style="color:#16a34a;">Dep '+_fmtEur(e.deposit)+'</span>':'')
+          +'</div>'
+          +'<div class="dbc-actions" onclick="event.stopPropagation()">'
+            +'<button class="aic" title="WhatsApp" onclick="dbSendOneWA(\''+e.agentId+'\')" style="background:#dcfce7;color:#16a34a;border-color:#bbf7d0;">&#128172;</button>'
+            +'<button class="aic" title="Email" onclick="dbSendOneEmail(\''+e.agentId+'\')" style="background:#eff6ff;color:#2563eb;border-color:#bfdbfe;">&#9993;&#65039;</button>'
+            +'<button class="aic" title="Ledger" onclick="openDbLedger(\''+e.agentId+'\')" style="background:#f5f3ff;color:#7c3aed;border-color:#ddd6fe;">&#128196;</button>'
+            +'<button class="aic" title="Growth" onclick="dbShowGrowthChart(\''+e.agentId+'\',\''+encodeURIComponent(e.name)+'\')" style="background:#fef3c7;color:#d97706;border-color:#fde68a;">&#128200;</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
 }
 
 // ── Per-agent DAILY LEDGER (bank-statement style from daily snapshots) ──
@@ -12992,8 +13121,8 @@ function dbMarkSelectedSettled(){
 
 function _dbWAMsg(e){
   if(e.customMsg&&e.customMsg.length>10)return e.customMsg;
-  var amt = parseFloat(e.amount||0).toFixed(2);
-  return 'Your current *DUE* balance is *_€'+amt+'_*. You need to clear it before 15.00 *TODAY*. Whatever you send today, tomorrow it must be clear before 15.00';
+  var amt = _fmtNum(parseFloat(e.amount||0));
+  return 'Your current *DUE* balance is *\u20ac'+amt+'*. Please clear it before *15:00 today*. Whatever you send today must be cleared before 15:00 tomorrow.';
 }
 
 var _dbView     = 'all';
@@ -13060,43 +13189,58 @@ function dbSendGroupWA(){
   var entries=_dbLoad();
   var today=_todayKey();
 
-  // Build owner → [entries] map using agents multiType/locToMain
-  var ownerGroups={};  // ownerName → {mainAgent, entries:[]}
+  // Build a set of all main IDs that own multiple locations (from locToMain, which is the
+  // authoritative multi-location map — the agents' multiType field is often blank in the data).
+  var mainIds={};                       // mainId → true
+  if(typeof locToMain!=='undefined'){
+    Object.keys(locToMain).forEach(function(locId){ mainIds[locToMain[locId]]=true; });
+  }
+  function _groupMainId(agentId){
+    // returns the main id this agent belongs to, or null if it's a standalone (single-location) agent
+    if(typeof locToMain!=='undefined' && locToMain[agentId]) return locToMain[agentId]; // it's a sub-location
+    if(mainIds[agentId]) return agentId;                                                 // it's a main of a group
+    return null;
+  }
+
+  // Build mainId → [entries] map for every multi-location group present in the data
+  var ownerGroups={};  // mainId → {mainAgent, ownerName, entries:[]}
 
   entries.forEach(function(e){
-    var ag=agents.find(function(a){return a.agentId===e.agentId;});
-    if(!ag||!ag.multiType) return;  // skip non-multi agents
-    var owner=ag.owner||ag.agentCompany||ag.name;
-    if(!ownerGroups[owner]) {
-      // Find the MAIN agent for this owner
-      var mainAg=agents.find(function(a){return a.owner===owner&&a.multiType==='MAIN';});
-      if(!mainAg) mainAg=ag;
-      ownerGroups[owner]={mainAgent:mainAg, entries:[]};
+    var gid=_groupMainId(e.agentId);
+    if(!gid) return;  // standalone agent — handled by per-row WA, not group WA
+    if(!ownerGroups[gid]){
+      var mainAg=agents.find(function(a){return a.agentId===gid;});
+      // Label the group by the SHOP/business name (what the user recognises), keeping the
+      // owner's personal name as secondary context. Falls back to owner or id.
+      var shopName=(mainAg&&mainAg.name)||'';
+      var personName=(mainAg&&mainAg.owner)||'';
+      var label = shopName || personName || gid;
+      if(shopName && personName && shopName!==personName) label = shopName+' ('+personName+')';
+      ownerGroups[gid]={mainAgent:mainAg||agents.find(function(a){return a.agentId===e.agentId;}), ownerName:label, entries:[]};
     }
-    ownerGroups[owner].entries.push(e);
+    ownerGroups[gid].entries.push(e);
   });
 
   if(!Object.keys(ownerGroups).length){showToast('No multi-location agents in imported data');return;}
 
   // Build queue for the send modal
   var queue=[];
-  Object.keys(ownerGroups).forEach(function(owner){
-    var grp=ownerGroups[owner];
+  Object.keys(ownerGroups).forEach(function(gid){
+    var grp=ownerGroups[gid];
     var mainAg=grp.mainAgent;
+    var owner=grp.ownerName;
     var phones=_dbGetPhones(mainAg.agentId);
     if(!phones.length&&mainAg.tel&&mainAg.tel.trim()&&mainAg.tel!=='—') phones=[mainAg.tel.trim()];
     if(!phones.length) return;  // no phone for this group owner
 
-    // Sort entries: MAIN first then LOCs
+    // Sort entries: MAIN first then LOCs (main = the group id)
     var sorted=grp.entries.slice().sort(function(a,b){
-      var aa=agents.find(function(x){return x.agentId===a.agentId;});
-      var bb=agents.find(function(x){return x.agentId===b.agentId;});
-      var aMain=(aa&&aa.multiType==='MAIN')?0:1;
-      var bMain=(bb&&bb.multiType==='MAIN')?0:1;
+      var aMain=(a.agentId===gid)?0:1;
+      var bMain=(b.agentId===gid)?0:1;
       return aMain-bMain;
     });
 
-    // Build grouped message — no greeting, start with DUE BALANCE
+    // Build grouped message — clean, aligned layout
     var lines=[];
     var total=0;
     var locationLines=[];
@@ -13106,18 +13250,20 @@ function dbSendGroupWA(){
       var amt=parseFloat(e.amount||0);
       if(Math.abs(amt)<0.005) return;  // skip zero balance locations
       total+=amt;
-      var sign=amt<0?'(credit)':'DUE';
-      locationLines.push('> *'+shopName+'*: *_\u20ac'+Math.abs(amt).toFixed(2)+'_* '+sign);
+      var sign=amt<0?' (credit)':'';
+      locationLines.push('\u2022 '+shopName+'\n   *\u20ac'+_fmtNum(Math.abs(amt))+'*'+sign);
     });
 
     // Skip this owner entirely if no locations have a balance
     if(!locationLines.length) return;
 
-    lines.push('Your current *DUE BALANCE* per location:');
+    lines.push('*DUE BALANCE \u2014 per location:*');
+    lines.push('');
     locationLines.forEach(function(l){lines.push(l);});
     lines.push('');
-    lines.push('*TOTAL: \u20ac'+Math.abs(total).toFixed(2)+'*'+(total<0?' (credit)':' DUE'));
-    lines.push('Please clear before 15:00 *TODAY*. Thank you.');
+    lines.push('*TOTAL: \u20ac'+_fmtNum(Math.abs(total))+(total<0?' (credit)':'')+'*');
+    lines.push('');
+    lines.push('Please clear before *15:00 today*. Thank you.');
 
     queue.push({
       name:    owner,
@@ -13182,7 +13328,8 @@ function _dbUpdateStorageMeter(){
     +'<span style="display:inline-block;width:60px;height:7px;background:var(--mg-gray-200);border-radius:4px;overflow:hidden;">'
       +'<span style="display:block;height:100%;width:'+pct+'%;background:'+col+';"></span></span>'
     +'<span style="color:'+col+';font-weight:700;">'+mb.toFixed(1)+'MB ('+pct+'%)</span>';
-  el.title='Browser storage: '+mb.toFixed(2)+'MB of ~5MB used'+(pct>=70?' — getting full; import fewer files at a time or clear old months.':'');
+  var _cloudOn=(typeof CLOUD!=='undefined')&&CLOUD.ready&&CLOUD.enabled;
+  el.title='Local browser copy: '+mb.toFixed(2)+'MB of ~5MB'+(_cloudOn?' \u00b7 \u2705 cloud backup active':' \u00b7 \u26A0 cloud off')+(pct>=70?' \u2014 getting full; clear old months.':'');
 }
 function _fmtDateLong(d){ if(!d) return ''; var x=new Date(d); if(isNaN(x)) return d; return x.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
 function _fmtDateShort(d){ if(!d) return ''; var x=new Date(d); if(isNaN(x)) return d; return x.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
@@ -15641,6 +15788,7 @@ function commGroupBtn(r){
 // ── Filter and render table ──
 // ── Commission charts (Batch 2): top earners, rate distribution, monthly trend ──
 function _fmtEur(n){ n=(n||0); if(Math.abs(n)<0.005) n=0; return '\u20ac'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function _fmtNum(n){ n=(n||0); if(Math.abs(n)<0.005) n=0; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function _fmtEur0(n){ n=(n||0); if(Math.abs(n)<0.005) n=0; return '\u20ac'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); }
 function _isCredit(n){ return (n||0) < -0.005; }   // genuinely negative (not rounding noise)
 function _isOwed(n){ return (n||0) > 0.005; }
