@@ -473,13 +473,27 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
   #tab-agents table { display: none; }
   #tab-agents #agentsCardList { display: block !important; }
 
-  /* All OTHER tables: horizontal scroll so columns keep their width instead of
-     overlapping. (Due Balance & Agents handled by their card views above.) */
-  #tab-documents .table-wrap, #tab-tellers .table-wrap, #tab-onboarding .table-wrap,
-  #tab-commissions .table-wrap, #tab-lms .table-wrap,
-  #tab-documents .table-wrap > table, #tab-tellers .table-wrap > table,
-  #tab-onboarding .table-wrap > table, #tab-commissions .table-wrap > table,
-  #tab-lms .table-wrap > table { min-width: 760px; }
+  /* TELLERS: full card view on phones */
+  #tab-tellers #tellersBody { display: none; }
+  #tab-tellers table { display: none; }
+  #tab-tellers #tellersCardList { display: block !important; }
+
+  /* ONBOARDING: full card view on phones (table view only; kanban board untouched) */
+  #obTableView table { display: none; }
+  #obTableView #onboardCardList { display: block !important; }
+
+  /* COMMISSIONS: full card view on phones */
+  #tab-commissions #commBody { display: none; }
+  #tab-commissions table { display: none; }
+  #tab-commissions #commCardList { display: block !important; }
+
+  /* LMS: full card view on phones (only the certificates table is hidden) */
+  #tab-lms #lmsCertBody { display: none; }
+  #tab-lms table { display: none; }
+  #tab-lms #lmsCardList { display: block !important; }
+
+  /* DOCUMENTS: horizontal scroll (kept as scroll-fix per your pick) */
+  #tab-documents .table-wrap, #tab-documents .table-wrap > table { min-width: 760px; }
 
   /* MODALS: nearly full-screen with comfortable margins */
   .modal-overlay { padding: 6px; align-items: flex-start; }
@@ -853,6 +867,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
               <tr><td colspan="9" style="padding:40px;text-align:center;color:var(--mg-gray-400);">Loading...</td></tr>
             </tbody>
           </table>
+          <div id="lmsCardList" class="db-card-list"></div>
           </div>
         </div>
 
@@ -1016,6 +1031,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
           </thead>
           <tbody id="commBody"></tbody>
         </table>
+        <div id="commCardList" class="db-card-list"></div>
       </div>
     </div>
 
@@ -1096,6 +1112,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
             </td></tr>
           </tbody>
         </table>
+        <div id="onboardCardList" class="db-card-list"></div>
       </div>
       </div><!-- /obTableView -->
 
@@ -1152,6 +1169,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
           </tr></thead>
           <tbody id="tellersBody"></tbody>
         </table>
+        <div id="tellersCardList" class="db-card-list"></div>
       </div>
     </div>
 
@@ -9792,6 +9810,43 @@ function renderTellers(){
       +'<button class="aic" onclick="openTellerDocModal('+i+',event)" title="Upload Document" style="color:#2563eb;">&#128196;</button>'
       +'</div></td></tr>';
   }).join('');
+
+  // ── Mobile card view (phones only) ──
+  var tcl=document.getElementById('tellersCardList');
+  if(tcl){
+    tcl.innerHTML=list.map(function(t,i){
+      var av=_initials(t.tellerName), col=_avColor(t.tellerName);
+      var issues=_issueCount(t);
+      var issueHtml=issues>0?'<span class="dbc-pill" style="background:#fef2f2;color:#dc2626;">&#9888; '+issues+' issue'+(issues>1?'s':'')+'</span>':'';
+      var statusPill=t.status==='Active'
+        ?'<span class="dbc-pill" style="background:#f0fdf4;color:#16a34a;">Active</span>'
+        :'<span class="dbc-pill" style="background:#f3f4f6;color:#6b7280;">'+(t.status||'Inactive')+'</span>';
+      var ownerTag=t.isOwner?'<span class="dbc-pill" style="background:#eff6ff;color:#2563eb;">Owner</span>':'';
+      return '<div class="dbc" onclick="openTellerDetailByIdx('+i+',event)">'
+        +'<div class="dbc-top">'
+          +'<div class="dbc-av" style="background:'+col+';">'+av+'</div>'
+          +'<div class="dbc-id">'
+            +'<div class="dbc-name">'+t.tellerName+'</div>'
+            +'<div class="dbc-sub">'+t.agentName+(t.city?' \u00b7 '+t.city:'')+' \u00b7 '+t.tellerId+'</div>'
+          +'</div>'
+          +statusPill
+        +'</div>'
+        +'<div class="dbc-mid">'
+          +'<div class="dbc-meta">'+ownerTag+issueHtml
+            +'<span class="dbc-doc">Pass '+_docBadge(t.passport,t.passportExp,t.passportDays)+'</span>'
+            +'<span class="dbc-doc">Res '+_docBadge(t.resCard,t.resCardExp,t.resCardDays)+'</span>'
+            +'<span class="dbc-doc">AML '+_docBadge(t.certExpiry,t.amlExp,t.amlDays)+'</span>'
+          +'</div>'
+          +'<div class="dbc-actions" onclick="event.stopPropagation()">'
+            +'<button class="aic rh" onclick="openTellerDetailByIdx('+i+',event)" title="View">&#128065;</button>'
+            +'<button class="aic" onclick="openEditTeller('+t.agentIdx+',event)" title="Edit">&#9998;</button>'
+            +'<button class="aic" onclick="openTellerDocModal('+i+',event)" title="Upload Document" style="color:#2563eb;">&#128196;</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+
   renderTellerStats();
 }
 
@@ -16284,6 +16339,44 @@ function filterCommTable(){
     var starBtn = document.querySelector('[onclick="openExtraBonus('+r.idx+')"]');
     if(starBtn) starBtn.style.color = eb > 0 ? 'var(--mg-red)' : 'var(--mg-gray-400)';
   });
+
+  // ── Mobile card view (phones only) ──
+  var ccl=document.getElementById('commCardList');
+  if(ccl){
+    ccl.innerHTML=_filteredComm.map(function(r){
+      var agentName=agents.find(function(a){return a.agentId===r.agentId;});
+      var displayName=agentName?agentName.name:r.name;
+      var av=(displayName||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+      var col=(typeof _dbAvatarColor==='function')?_dbAvatarColor(displayName||''):'#2563eb';
+      var eb=extraBonusStore[_extraBonusKey(r,_commMonth)]||0;
+      var tot=Math.round((r.total+eb)*100)/100;
+      var invPill=r.invoice==='received'
+        ?'<span class="dbc-pill" style="background:#f0fdf4;color:#16a34a;">Invoice in</span>'
+        :'<span class="dbc-pill" style="background:#fffbeb;color:#d97706;">Pending</span>';
+      var incTag=r.incentive>0?'<span class="dbc-kv" style="color:#16a34a;">Inc +'+_fmtEur(r.incentive)+'</span>':'';
+      return '<div class="dbc" onclick="commToggleExpand('+r.idx+')">'
+        +'<div class="dbc-top">'
+          +'<div class="dbc-av" style="background:'+col+';">'+av+'</div>'
+          +'<div class="dbc-id">'
+            +'<div class="dbc-name">'+displayName+'</div>'
+            +'<div class="dbc-sub">'+r.legacyId+(r.agentId?' \u00b7 '+r.agentId:'')+' \u00b7 '+r.send_rate+'%</div>'
+          +'</div>'
+          +'<div class="dbc-amt" style="color:#16a34a;font-size:16px;">'+_fmtEur(tot)+(eb>0?' \u2b50':'')+'</div>'
+        +'</div>'
+        +'<div class="dbc-mid">'
+          +'<div class="dbc-meta">'+invPill
+            +'<span class="dbc-kv">\uD83D\uDCE4 '+r.sends+'</span>'
+            +incTag
+          +'</div>'
+          +'<div class="dbc-actions" onclick="event.stopPropagation()">'
+            +'<button class="aic" onclick="sendCommRowWA('+r.idx+')" title="WhatsApp">&#128172;</button>'
+            +'<button class="aic" onclick="sendCommRowEmail('+r.idx+')" title="Email">&#9993;</button>'
+            +'<button class="aic" onclick="openReceiptUpload('+r.idx+')" title="Upload Receipt" style="color:var(--mg-success);">&#129534;</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
 }
 
 // ── renderCommTable called on login ──
@@ -17999,6 +18092,47 @@ function renderOnboarding(){
       + '</td>'
     + '</tr>';
   }).join('');
+
+  // ── Mobile card view (phones only) ──
+  var ocl=document.getElementById('onboardCardList');
+  if(ocl){
+    ocl.innerHTML=filtered.map(function(a){
+      var realIdx=onboards.indexOf(a);
+      var days=a.submitDate?Math.floor((today-new Date(a.submitDate))/86400000):null;
+      var isOverdue=days!==null&&days>75&&a.stage!=='Approved & Active';
+      var sc=OB_STAGE_COLORS[a.stage]||'#9E9E9E';
+      var dc=a.docCount||0, dt=(a.agentType==='company')?OB_DOCS_COMPANY.length:OB_DOCS_INDIVIDUAL.length;
+      var docPct=Math.round(dc/dt*100);
+      var docColor=dc===dt?'var(--mg-success)':dc>=3?'var(--mg-warning)':'var(--mg-danger)';
+      var av=(a.name||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+      var col=(typeof _dbAvatarColor==='function')?_dbAvatarColor(a.name||''):sc;
+      var daysPill=days!==null
+        ?'<span class="dbc-pill" style="background:'+(isOverdue?'#fef2f2':days>45?'#fffbeb':'#f3f4f6')+';color:'+(isOverdue?'#dc2626':days>45?'#d97706':'#6b7280')+';">'+(isOverdue?'\u26a0 ':'')+days+'d</span>':'';
+      var stagePill='<span class="dbc-pill" style="background:'+sc+'22;color:'+sc+';">'+(a.stage||'').replace('Application Submitted','Submitted').replace('Documents Collected','Docs').replace('Training / Certification','Training').replace('System Setup (Agent ID)','Setup').replace('Approved & Active','\u2713 Active').replace('Cancelled','\u2715 Cancelled')+'</span>';
+      var actBtns='<button class="aic gh" onclick="editOnboard('+realIdx+')" title="Edit">&#9998;</button>';
+      if(a.stage!=='Approved & Active'&&a.stage!=='Cancelled'){
+        actBtns+='<button class="aic" onclick="promoteStage('+realIdx+')" title="Next stage" style="color:var(--mg-info);">&#8594;</button>'
+          +'<button class="aic" onclick="cancelOnboard('+realIdx+')" title="Cancel" style="color:var(--mg-danger);">&#10006;</button>';
+      }
+      return '<div class="dbc" onclick="editOnboard('+realIdx+')">'
+        +'<div class="dbc-top">'
+          +'<div class="dbc-av" style="background:'+col+';">'+av+'</div>'
+          +'<div class="dbc-id">'
+            +'<div class="dbc-name">'+a.name+'</div>'
+            +'<div class="dbc-sub">'+(a.dba?a.dba:'')+(a.city?' \u00b7 '+a.city:'')+(a.ledBy?' \u00b7 '+a.ledBy:'')+'</div>'
+          +'</div>'
+          +daysPill
+        +'</div>'
+        +'<div class="dbc-mid">'
+          +'<div class="dbc-meta">'+stagePill
+            +'<span class="dbc-kv">Docs <b style="color:'+docColor+';">'+dc+'/'+dt+'</b></span>'
+          +'</div>'
+          +'<div class="dbc-actions" onclick="event.stopPropagation()">'+actBtns+'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+
   if(typeof renderLeadReport==='function') renderLeadReport();
   if(_obView==='board' && typeof renderObBoard==='function') renderObBoard();
 }
@@ -18732,6 +18866,40 @@ function renderLmsCerts(){
       +'</div></td>'
     +'</tr>';
   }).join('');
+
+  // ── Mobile card view (phones only) ──
+  var lcl=document.getElementById('lmsCardList');
+  if(lcl){
+    lcl.innerHTML=filtered.map(function(r){
+      var sc=statusCfg[r.status]||statusCfg.none;
+      var hasCert=r.status!=='none';
+      var av=(r.tellerName||'?').split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+      var col=(typeof _dbAvatarColor==='function')?_dbAvatarColor(r.tellerName||''):'#7c3aed';
+      var statusPill='<span class="dbc-pill" style="background:'+sc.bg+';color:'+sc.color+';">'+sc.label+'</span>';
+      var actBtns='';
+      if(hasCert){ actBtns+='<button class="aic" onclick="viewLmsCert('+r.idx+')" title="View Certificate" style="color:var(--mg-success);">&#128065;</button>'; }
+      actBtns+='<button class="aic gh" onclick="openEditCertModal('+r.idx+')" title="Edit">&#9998;</button>';
+      if(r.tel){ actBtns+='<button class="aic" onclick="lmsSendWA('+r.idx+')" title="WhatsApp" style="color:#25D366;">&#128172;</button>'; }
+      return '<div class="dbc" onclick="'+(hasCert?'viewLmsCert('+r.idx+')':'openEditCertModal('+r.idx+')')+'">'
+        +'<div class="dbc-top">'
+          +'<div class="dbc-av" style="background:'+col+';">'+av+'</div>'
+          +'<div class="dbc-id">'
+            +'<div class="dbc-name">'+r.tellerName+'</div>'
+            +'<div class="dbc-sub">'+(r.userId||r.agentId||'')+(r.mainOffice?' \u00b7 '+r.mainOffice:'')+'</div>'
+          +'</div>'
+          +statusPill
+        +'</div>'
+        +'<div class="dbc-mid">'
+          +'<div class="dbc-meta">'
+            +(hasCert?'<span class="dbc-kv">Score <b style="color:var(--mg-success);">'+(r.score||'\u2014')+'</b></span>':'<span class="dbc-kv" style="color:#9ca3af;">No certificate</span>')
+            +(r.completion?'<span class="dbc-kv">'+fmtDate(r.completion)+'</span>':'')
+          +'</div>'
+          +'<div class="dbc-actions" onclick="event.stopPropagation()">'+actBtns+'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+
   _lmsUpdateBulkBar();
 }
 
