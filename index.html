@@ -488,6 +488,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
   #tab-commissions #commCardList { display: block !important; }
 
   /* LMS: full card view on phones (the certificates table is hidden) */
+  #tab-lms .lms-grid { grid-template-columns: 1fr !important; }
   #tab-lms #lmsCertBody { display: none !important; }
   #tab-lms table { display: none !important; }
   #tab-lms #lmsCardList { display: block !important; }
@@ -829,7 +830,7 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
       <!-- Renewal alerts (auto-populated; hidden when none lapsing) -->
       <div id="lmsRenewalAlerts" style="display:none;margin-bottom:16px;"></div>
 
-      <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;">
+      <div class="lms-grid" style="display:grid;grid-template-columns:1fr 340px;gap:16px;">
 
         <!-- LEFT: Certificate Management table -->
         <div class="card" style="padding:0;overflow:hidden;">
