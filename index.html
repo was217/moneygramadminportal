@@ -469,27 +469,27 @@ mark{background:#fef08a;color:inherit;padding:0 1px;border-radius:2px;}
   #dbViewMain .db-card-list { display: block !important; }
 
   /* AGENTS: full card view on phones (most-used mobile tab) */
-  #tab-agents #agentsBody { display: none; }
-  #tab-agents table { display: none; }
+  #tab-agents #agentsBody { display: none !important; }
+  #tab-agents table { display: none !important; }
   #tab-agents #agentsCardList { display: block !important; }
 
   /* TELLERS: full card view on phones */
-  #tab-tellers #tellersBody { display: none; }
-  #tab-tellers table { display: none; }
+  #tab-tellers #tellersBody { display: none !important; }
+  #tab-tellers table { display: none !important; }
   #tab-tellers #tellersCardList { display: block !important; }
 
   /* ONBOARDING: full card view on phones (table view only; kanban board untouched) */
-  #obTableView table { display: none; }
+  #obTableView table { display: none !important; }
   #obTableView #onboardCardList { display: block !important; }
 
   /* COMMISSIONS: full card view on phones */
-  #tab-commissions #commBody { display: none; }
-  #tab-commissions table { display: none; }
+  #tab-commissions #commBody { display: none !important; }
+  #tab-commissions table { display: none !important; }
   #tab-commissions #commCardList { display: block !important; }
 
-  /* LMS: full card view on phones (only the certificates table is hidden) */
-  #tab-lms #lmsCertBody { display: none; }
-  #tab-lms table { display: none; }
+  /* LMS: full card view on phones (the certificates table is hidden) */
+  #tab-lms #lmsCertBody { display: none !important; }
+  #tab-lms table { display: none !important; }
   #tab-lms #lmsCardList { display: block !important; }
 
   /* DOCUMENTS: horizontal scroll (kept as scroll-fix per your pick) */
